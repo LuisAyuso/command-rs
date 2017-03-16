@@ -1,5 +1,8 @@
+
 use std::marker::PhantomData;
 
+mod cheat;
+use cheat::*;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -98,6 +101,70 @@ impl<Ctx> IntoIterator for CommandList<Ctx> {
         self.list.into_iter()
     }
 }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+pub struct CommandQueue<Ctx, K, P>
+where K : Ord
+{
+    ghost1: PhantomData<Ctx>,
+    ghost2: PhantomData<K>,
+    ghost3: PhantomData<P>,
+    order_f: Box<Fn(&P) -> K>,
+}
+
+impl<Ctx, K, P> CommandQueue<Ctx, K, P>
+where K : Ord
+{
+// TODO: we pass a function, which will convert payloads into codes, which are oredered
+    pub fn new<F>(f:F) -> CommandQueue<Ctx, K, P>
+    where F : Fn(&P) -> K  + 'static
+
+    {
+        CommandQueue{
+            ghost1: PhantomData,
+            ghost2: PhantomData,
+            ghost3: PhantomData,
+            order_f: Box::new(f),
+        }
+    }
+
+// TODO: this one needs to get the payload and create a key, priority or whatever we want to call it
+    pub fn add(&mut self, _: Box<Command<Ctx>>){
+        //self.queue.insert(self.order_f(
+    }
+}
+
+//pub struct CQIterator<Ctx,K,P>
+//where K : Ord
+//{
+//    ghost1: PhantomData<Ctx>,
+//}
+//
+//impl<Ctx,K,P> CQIterator<Ctx,K,P> 
+//where K : Ord
+//{
+//}
+//
+//impl<Ctx,K,P> Iterator for CQIterator<Ctx,K,P> 
+//where K : Ord
+//{
+//    type Item = Box<Command<Ctx>>;
+//    fn next(&mut self) -> Option<Box<Command<Ctx>>> {
+//		None
+//    }
+//}
+//
+//impl<Ctx, K, P>  IntoIterator for CommandQueue<Ctx, K, P>
+//where K : Ord
+//{
+//    type Item = Box<Command<Ctx>>;
+//    type IntoIter = CQIterator<Ctx, K, P>;
+//
+//    fn into_iter(self) -> Self::IntoIter {
+//		CQIterator::new(self.queue.iter())
+//    }
+//}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -263,5 +330,28 @@ mod tests {
         for s in ctx {
             println!("{}", s);
         }
+    }
+
+    #[test]
+    fn command_queue() {
+
+        let ctx = 1;
+        let mut cq = CommandQueue::<i32, i32, i32>::new(move|x| *x);
+
+        cq.add(Box::new(command!(ctx_type: i32 => ctx,
+                        payload: 1 => i,
+                        execute: println!("{}:{}", ctx, i) )));
+        cq.add(Box::new(command!(ctx_type: i32 => ctx,
+                        payload: 2 => i,
+                        execute: println!("{}:{}", ctx, i) )));
+        cq.add(Box::new(command!(ctx_type: i32 => ctx,
+                        payload: 3 => i,
+                        execute: println!("{}:{}", ctx, i) )));
+        cq.add(Box::new(command!(ctx_type: i32 => ctx,
+                        payload: 4 => i,
+                        execute: println!("{}:{}", ctx, i) )));
+       // for cmd in cq {
+       //     cmd.exec(&mut ctx);
+       // }
     }
 }
